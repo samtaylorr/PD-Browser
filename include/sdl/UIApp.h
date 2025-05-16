@@ -1,0 +1,29 @@
+#ifndef UIAPP_H
+#define UIAPP_H
+
+#include <string>
+#include <SDL3/SDL.h>
+
+class UIApp
+{
+public:
+    UIApp(int width, int height, const std::string& title);
+
+    // RAII: delete copy constructor/assignment
+    UIApp(const UIApp&) = delete;
+    UIApp& operator=(const UIApp&) = delete;
+
+    ~UIApp();
+    void run();
+
+private:
+    void cleanup();
+
+    int mWidth;
+    int mHeight;
+    SDL_Window* mWindow;
+    SDL_Surface* mScreenSurface;
+    SDL_Surface* mHelloWorld;
+};
+
+#endif // UIAPP_H
