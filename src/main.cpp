@@ -1,19 +1,15 @@
-/* Headers */
-//Using SDL and STL string
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include "sdl/UIApp.h"
 #include "ClientHTTPSocketHandler.h"
 #include <string>
 
-/* Constants */
-//Screen dimension constants
 constexpr int kScreenWidth{ 1280 };
 constexpr int kScreenHeight{ 720 };
 
 int main(int argc, char* argv[]) {
     try {
-        UIApp app(kScreenWidth, kScreenHeight, "SDL3 Tutorial: Hello SDL3");
+        UIApp app(kScreenWidth, kScreenHeight, "PD Browser");
         if (argc >= 2) {
             ClientHTTPSocketHandler client(argv[1]);
             client.SendHTTPRequest("GET", "/index.html");

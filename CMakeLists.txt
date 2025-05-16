@@ -7,7 +7,10 @@ find_package(SDL3 REQUIRED CONFIG)
 
 add_executable(web-browser ${SOURCES})
 
-target_link_libraries(web-browser PRIVATE SDL3::SDL3)
+target_link_libraries(web-browser PRIVATE 
+    SDL3::SDL3
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/liblitehtml.a
+)
 
 if(WIN32)
     target_link_libraries(web-browser PRIVATE ws2_32)

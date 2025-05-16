@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <map>
+#include <optional>
 
 // Holds common HTTP headers and body
 typedef struct {
@@ -19,15 +20,16 @@ class ClientHTTPSocketHandler : public SocketHandler
 public:
     explicit ClientHTTPSocketHandler(std::string addr)
         : address(std::move(addr)), wsaInit(), socket() {}
-    int SendHTTPRequest(const std::string& method, const std::string& path);
-    HttpResponse* ParseHTMLResponse();
+    int SendHTTPRequest(const std::string& method = "GET", const std::string& path = "/index.html");
+    std::optional<std::reference_wrapper<HttpResponse>> ParseHTMLResponse();
+    const HttpResponse& GetResponse() const;
 
 private:
     std::string address;
     WinsockInit wsaInit;
     SocketRAII socket;
     std::vector<char> dataBuffer;
-    std::unique_ptr<HttpResponse> httpResponse;
+    std::optional<HttpResponse> httpResponse;
 };
 
 #endif
