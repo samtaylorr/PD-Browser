@@ -3,7 +3,6 @@
 #define CLIENTHTTPSOCKETHANDLER_H
 #include "SocketHandler.h"
 #include "raii/RAIISockets.h"
-
 #include <memory>
 #include <string>
 #include <map>
@@ -22,7 +21,6 @@ public:
         : address(std::move(addr)), wsaInit(), socket() {}
     int SendHTTPRequest(const std::string& method = "GET", const std::string& path = "/index.html");
     std::optional<std::reference_wrapper<HttpResponse>> ParseHTMLResponse();
-    const HttpResponse& GetResponse() const;
 
 private:
     std::string address;

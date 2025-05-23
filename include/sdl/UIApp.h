@@ -15,12 +15,14 @@ public:
 
     ~UIApp();
     void run();
+    void loadPage(const std::string& html);
 
 private:
     void cleanup();
 
     int mWidth;
     int mHeight;
+    std::string html;
     SDL_Window* mWindow;
     SDL_Surface* mScreenSurface;
     SDL_Surface* mHelloWorld;

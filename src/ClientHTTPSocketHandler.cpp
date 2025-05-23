@@ -1,12 +1,11 @@
 #include "ClientHTTPSocketHandler.h"
-#include "util/Parser.h"
+#include "util/HeaderParser.h"
 
 #include <iostream>
 #include <vector>
 #include <sstream>
 #include <algorithm>
 #include <cctype>
-#include <cassert>
 
 int ClientHTTPSocketHandler::SendHTTPRequest(const std::string& method, const std::string& path)
 {
@@ -32,8 +31,6 @@ int ClientHTTPSocketHandler::SendHTTPRequest(const std::string& method, const st
             if (connectWithTimeout(tempSocket, ptr->ai_addr, 5000)) {
                 connectSocket = std::move(tempSocket);  // transfer ownership here
                 break;  // stop after successful connect
-            } else {
-                std::cerr << "Connection timed out or failed.\n";
             }
         }
 
@@ -76,15 +73,6 @@ int ClientHTTPSocketHandler::SendHTTPRequest(const std::string& method, const st
             }
         } while (iResult > 0);
 
-        if (auto response = ParseHTMLResponse()) {
-            auto range = response->get().headers.equal_range("date");
-            for (auto it = range.first; it != range.second; ++it)
-                std::cout << "Date: " << it->second << "\n";
-        }  else {
-            std::cerr << "Failed to parse HTTP response.\n";
-            return 1;
-        }
-
         return 0;
         
     } catch (const std::exception& e) {
@@ -114,9 +102,4 @@ std::optional<std::reference_wrapper<HttpResponse>> ClientHTTPSocketHandler::Par
               << response.substr(0, 100) << "\n";
         return std::nullopt;
     }
-}
-
-const HttpResponse& ClientHTTPSocketHandler::GetResponse() const {
-    assert(httpResponse.has_value() && "HttpResponse is not available");
-    return *httpResponse;
 }

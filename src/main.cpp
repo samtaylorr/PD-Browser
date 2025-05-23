@@ -3,19 +3,34 @@
 #include "sdl/UIApp.h"
 #include "ClientHTTPSocketHandler.h"
 #include <string>
+#include <cassert>
+#include <iostream>
 
-constexpr int kScreenWidth{ 1280 };
-constexpr int kScreenHeight{ 720 };
+constexpr int kScreenWidth{ 600 };
+constexpr int kScreenHeight{ 400 };
+constexpr const char* project = "PD Browser";
 
 int main(int argc, char* argv[]) {
     try {
-        UIApp app(kScreenWidth, kScreenHeight, "PD Browser");
+        UIApp app(kScreenWidth, kScreenHeight, project);
         if (argc >= 2) {
             ClientHTTPSocketHandler client(argv[1]);
-            client.SendHTTPRequest("GET", "/index.html");
+            client.SendHTTPRequest("GET", "/pdbrowser-html/");
+            auto responseOpt = client.ParseHTMLResponse();
+            if (responseOpt) {
+                app.loadPage(responseOpt->get().html_body);
+            } else {
+                std::cerr << "Failed to parse HTML response.\n";
+            }
+            app.loadPage(client.ParseHTMLResponse()->get().html_body);
+            app.run();
         }
-        app.run();
-    } 
+        else
+        {
+            throw std::invalid_argument("Usage: web-browser <URL>");
+        }
+        
+    }
     catch (const std::exception& e) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Exception: %s\n", e.what());
         return 1;

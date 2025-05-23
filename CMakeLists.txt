@@ -4,19 +4,27 @@ project(web-browser)
 file(GLOB SOURCES "src/*.cpp")
 
 find_package(SDL3 REQUIRED CONFIG)
+find_package(SDL3_ttf REQUIRED CONFIG)
+
+add_subdirectory(vendor/gumbo)
 
 add_executable(web-browser ${SOURCES})
 
 target_link_libraries(web-browser PRIVATE 
     SDL3::SDL3
+    SDL3_ttf::SDL3_ttf
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/liblitehtml.a
+    gumbo
 )
 
 if(WIN32)
     target_link_libraries(web-browser PRIVATE ws2_32)
 endif()
 
-target_include_directories(web-browser PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(web-browser PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    vendor/gumbo-parser/include
+)
 
 target_compile_definitions(web-browser PRIVATE SDL_MAIN_HANDLED)
 

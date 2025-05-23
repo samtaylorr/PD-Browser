@@ -1,0 +1,5 @@
+class Font
+{
+public:
+    Font();
+}
