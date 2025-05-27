@@ -19,7 +19,6 @@ litehtml::uint_ptr HtmlRenderHost::create_font(
     if (!descr.family.empty()) {
         size_t pos = descr.family.find(',');
         fontName = (pos == std::string::npos) ? descr.family : descr.family.substr(0, pos);
-        // Optionally trim whitespace here if needed
     }
 
     std::string fontPath = "../data/fonts/" + fontName + ".ttf";
@@ -34,7 +33,16 @@ litehtml::uint_ptr HtmlRenderHost::create_font(
     int ttfStyle = TTF_STYLE_NORMAL;
 
     bool italic = (descr.style == litehtml::font_style_italic);
-    if (italic) {
+    if (italic) {std::string fontPath = "../data/fonts/" + fontName + ".ttf";
+
+    TTF_Font* font = TTF_OpenFont(fontPath.c_str(), size);
+    if (font == nullptr) {
+        std::cout << "[create_font] can't load ttf: " << fontName << std::endl;
+        std::cout << "TTF_OpenFont: " << SDL_GetError() << std::endl;
+        return 0;
+    }
+
+    int ttfStyle = TTF_STYLE_NORMAL;
         ttfStyle |= TTF_STYLE_ITALIC;
     }
 
@@ -75,48 +83,74 @@ void HtmlRenderHost::delete_font( litehtml::uint_ptr hFont )
     }
 }
 
-int HtmlRenderHost::text_width( const char* text, litehtml::uint_ptr hFont )
+int HtmlRenderHost::text_width(const char* text, litehtml::uint_ptr hFont)
 {
     TTF_Font* font = (TTF_Font*)hFont;
-    
-    if(!font) {
-        // std::cout << "[text_width](" << text << ") font: null" << std::endl;
+    if (!font) {
         return 0;
     }
-    return TTF_GetFontSize(font);
+
+    TTF_Text* ttfText = TTF_CreateText(NULL, font, text, strlen(text));
+    if (!ttfText) {
+        std::cerr << "TTF_CreateText failed: " << SDL_GetError() << std::endl;
+        return 0;
+    }
+
+    int w = 0, h = 0;
+    if (TTF_GetTextSize(ttfText, &w, &h)) {
+        TTF_DestroyText(ttfText);
+        return w;
+    } else {
+        TTF_DestroyText(ttfText);
+        return 0;
+    }
 }
 
-void HtmlRenderHost::draw_text( litehtml::uint_ptr hdc, const char* text, litehtml::uint_ptr hFont, litehtml::web_color color, const litehtml::position& pos )
+void HtmlRenderHost::draw_text(litehtml::uint_ptr hdc, const char* text, litehtml::uint_ptr hFont, litehtml::web_color color, const litehtml::position& pos)
 {
-    SDL_Color sdlcolor={color.red, color.green, color.blue, color.alpha};
-    SDL_Surface *info;
+    if (!m_renderer) return;
+    if (!text) return;
+
     TTF_Font* font = (TTF_Font*)hFont;
+    if (!font) return;
 
-    if(!(info=TTF_RenderText_Blended(font, text, 0, sdlcolor))) {
-        //handle error here, perhaps print SDL_GetError at least
-    } else {
-        // fixme - use baseline correctly
+    SDL_Color sdlcolor = {
+        (Uint8)color.red,
+        (Uint8)color.green,
+        (Uint8)color.blue,
+        (color.alpha != 0) ? (Uint8)color.alpha : (Uint8)255
+    };
 
-        SDL_Texture *texture = SDL_CreateTextureFromSurface(m_renderer, info);
-        
-        SDL_FRect src = {
-            0.0f,
-            0.0f,
-            static_cast<float>(info->w),
-            static_cast<float>(info->h)
-        };
-
-        SDL_FRect dst = {
-            static_cast<float>(pos.x),
-            static_cast<float>(pos.y - static_cast<int>(pos.height * 0.5)),
-            static_cast<float>(info->w),
-            static_cast<float>(info->h)
-        };
-
-
-        SDL_RenderTexture(m_renderer, texture, &src, &dst);
-        SDL_DestroyTexture(texture);
+    SDL_Surface* textSurface = TTF_RenderText_Blended(font, text, 0, sdlcolor);
+    if (!textSurface) {
+        std::cerr << "TTF_RenderText_Blended failed: " << SDL_GetError() << std::endl;
+        return;
     }
+
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(m_renderer, textSurface);
+    SDL_DestroySurface(textSurface);
+    if (!textTexture) {
+        std::cerr << "SDL_CreateTextureFromSurface failed: " << SDL_GetError() << std::endl;
+        return;
+    }
+
+    SDL_FRect dstRect;
+    dstRect.x = static_cast<float>(pos.x);
+    dstRect.y = static_cast<float>(pos.y);
+
+    float w = 0.f, h = 0.f;
+    if (SDL_GetTextureSize(textTexture, &w, &h)) {
+        dstRect.w = w;
+        dstRect.h = h;
+    } else {
+        std::cerr << "SDL_GetTextureSize failed: " << SDL_GetError() << std::endl;
+        // fallback to pos width/height or zero
+        dstRect.w = pos.width > 0 ? static_cast<float>(pos.width) : 0.f;
+        dstRect.h = pos.height > 0 ? static_cast<float>(pos.height) : 0.f;
+    }
+
+    SDL_RenderTexture(m_renderer, textTexture, nullptr, &dstRect);
+    SDL_DestroyTexture(textTexture);
 }
 
 int HtmlRenderHost::pt_to_px( int pt ) const
@@ -178,7 +212,7 @@ void HtmlRenderHost::draw_borders(litehtml::uint_ptr hdc, const litehtml::border
 
 const char* HtmlRenderHost::get_default_font_name() const
 {
-    return "sans-serif";
+    return "Roboto-Medium";
 }
 
 
@@ -208,4 +242,8 @@ void HtmlRenderHost::get_language(litehtml::string& language, litehtml::string& 
 {
     language = "en";
     culture = "";
+}
+
+void HtmlRenderHost::set_renderer(SDL_Renderer* renderer) {
+    m_renderer = renderer;
 }

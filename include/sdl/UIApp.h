@@ -3,6 +3,7 @@
 
 #include <string>
 #include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 class UIApp
 {
@@ -24,8 +25,7 @@ private:
     int mHeight;
     std::string html;
     SDL_Window* mWindow;
-    SDL_Surface* mScreenSurface;
-    SDL_Surface* mHelloWorld;
+    SDL_Renderer* mRenderer;
 };
 
 #endif // UIAPP_H

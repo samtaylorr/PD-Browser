@@ -30,14 +30,13 @@ target_include_directories(web-browser PRIVATE
 # Windows-specific settings
 if(WIN32)
     target_link_libraries(web-browser PRIVATE ws2_32)
-
-    set(SDL3_DLL_DIR "${CMAKE_SOURCE_DIR}/vendor")
-    add_custom_command(TARGET web-browser POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${SDL3_DLL_DIR}/SDL3.dll"
-            "$<TARGET_FILE_DIR:web-browser>"
-    )
 endif()
+
+add_custom_command(TARGET web-browser POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/data/fonts"
+        "${CMAKE_BINARY_DIR}/data/fonts"
+)
 
 # Prevent SDL from overriding main()
 target_compile_definitions(web-browser PRIVATE SDL_MAIN_HANDLED)

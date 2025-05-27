@@ -4,6 +4,7 @@
 #include <litehtml.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 class HtmlRenderHost : public litehtml::document_container {
 public:
@@ -29,7 +30,6 @@ public:
 		void				draw_solid_fill(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const litehtml::web_color& color) override;
         void				get_media_features(litehtml::media_features& media) const override;
 		void				get_viewport(litehtml::position& viewport) const {}
-
 		void				draw_linear_gradient(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const litehtml::background_layer::linear_gradient& gradient) {}
 		void				draw_radial_gradient(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const litehtml::background_layer::radial_gradient& gradient) {}
 		void				draw_conic_gradient(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const litehtml::background_layer::conic_gradient& gradient) {}
@@ -52,8 +52,10 @@ public:
 		litehtml::string	resolve_color(const litehtml::string& /*color*/) const { return litehtml::string(); }
 		void				split_text(const char* text, const std::function<void(const char*)>& on_word, const std::function<void(const char*)>& on_space) {}
 
+		// Non-override methods
+		void set_renderer(SDL_Renderer* renderer);
 private:
-    SDL_Renderer* m_renderer;
+    SDL_Renderer* m_renderer = nullptr;
 };
 
 #endif
