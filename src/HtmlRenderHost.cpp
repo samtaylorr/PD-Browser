@@ -21,29 +21,18 @@ litehtml::uint_ptr HtmlRenderHost::create_font(
         fontName = (pos == std::string::npos) ? descr.family : descr.family.substr(0, pos);
     }
 
-    std::string fontPath = "../data/fonts/" + fontName + ".ttf";
-
+    std::string fontPath = "data/fonts/" + fontName + ".ttf";
     TTF_Font* font = TTF_OpenFont(fontPath.c_str(), size);
-    if (font == nullptr) {
-        std::cout << "[create_font] can't load ttf: " << fontName << std::endl;
-        std::cout << "TTF_OpenFont: " << SDL_GetError() << std::endl;
-        return 0;
+    if (!font) {
+        std::cerr << "Failed to load font: " << SDL_GetError() << std::endl;
+        return (litehtml::uint_ptr)0;
     }
 
     int ttfStyle = TTF_STYLE_NORMAL;
 
     bool italic = (descr.style == litehtml::font_style_italic);
-    if (italic) {std::string fontPath = "../data/fonts/" + fontName + ".ttf";
-
-    TTF_Font* font = TTF_OpenFont(fontPath.c_str(), size);
-    if (font == nullptr) {
-        std::cout << "[create_font] can't load ttf: " << fontName << std::endl;
-        std::cout << "TTF_OpenFont: " << SDL_GetError() << std::endl;
-        return 0;
-    }
-
-    int ttfStyle = TTF_STYLE_NORMAL;
-        ttfStyle |= TTF_STYLE_ITALIC;
+    if (italic) {
+        ttfStyle |= TTF_STYLE_ITALIC;    // Only affects local copy
     }
 
     int decoration = descr.decoration_line;
@@ -66,16 +55,12 @@ litehtml::uint_ptr HtmlRenderHost::create_font(
         fm->x_height  = get_default_font_size();
         fm->draw_spaces = italic || (decoration != 0);
     }
-
     return (litehtml::uint_ptr)font;
 }
 
 
 void HtmlRenderHost::delete_font( litehtml::uint_ptr hFont )
 {
-    // todo fix segfault
-    return;
-
     TTF_Font* font = (TTF_Font*)hFont;
 
     if(font) {
@@ -212,15 +197,15 @@ void HtmlRenderHost::draw_borders(litehtml::uint_ptr hdc, const litehtml::border
 
 const char* HtmlRenderHost::get_default_font_name() const
 {
-    return "Roboto-Medium";
+    return "Arial";
 }
 
-
-litehtml::element::ptr	HtmlRenderHost::create_element( const char* tag_name,
-														const litehtml::string_map& attributes,
-														const std::shared_ptr<litehtml::document>& doc)
+litehtml::element::ptr HtmlRenderHost::create_element(
+    const char* tag_name,
+    const litehtml::string_map& attributes,
+    const std::shared_ptr<litehtml::document>& doc)
 {
-    return 0;
+    return nullptr;
 }
 
 void HtmlRenderHost::get_media_features(litehtml::media_features& media) const
@@ -246,4 +231,57 @@ void HtmlRenderHost::get_language(litehtml::string& language, litehtml::string& 
 
 void HtmlRenderHost::set_renderer(SDL_Renderer* renderer) {
     m_renderer = renderer;
+}
+
+void HtmlRenderHost::get_viewport(litehtml::position& viewport) const {
+    viewport.x = 0;
+    viewport.y = 0;
+    viewport.width = 600; // or mWidth from your app
+    viewport.height = 400; // or mHeight
+}
+
+void HtmlRenderHost::transform_text(litehtml::string& text, litehtml::text_transform tt) {
+    switch(tt) {
+        case litehtml::text_transform_capitalize:
+            if (!text.empty()) text[0] = std::toupper(text[0]);
+            break;
+        case litehtml::text_transform_uppercase:
+            std::transform(text.begin(), text.end(), text.begin(), ::toupper);
+            break;
+        case litehtml::text_transform_lowercase:
+            std::transform(text.begin(), text.end(), text.begin(), ::tolower);
+            break;
+        default:
+            break;
+    }
+}
+
+// Prevents CSS lookup failure
+void HtmlRenderHost::import_css(litehtml::string& text, const litehtml::string& url, litehtml::string& baseurl)
+{
+    text.clear();
+}
+
+void HtmlRenderHost::split_text(const char* text,
+    const std::function<void(const char*)>& on_word,
+    const std::function<void(const char*)>& on_space)
+{
+    std::string str(text);
+    std::string token;
+    for (char ch : str) {
+        if (std::isspace(static_cast<unsigned char>(ch))) {
+            if (!token.empty()) {
+                on_word(token.c_str());
+                token.clear();
+            }
+            std::string space(1, ch);
+            on_space(space.c_str());
+        } else {
+            token += ch;
+        }
+    }
+
+    if (!token.empty()) {
+        on_word(token.c_str());
+    }
 }

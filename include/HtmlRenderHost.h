@@ -29,7 +29,7 @@ public:
 		void				draw_image(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const std::string& url, const std::string& base_url) {};
 		void				draw_solid_fill(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const litehtml::web_color& color) override;
         void				get_media_features(litehtml::media_features& media) const override;
-		void				get_viewport(litehtml::position& viewport) const {}
+		void				get_viewport(litehtml::position& viewport) const override;
 		void				draw_linear_gradient(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const litehtml::background_layer::linear_gradient& gradient) {}
 		void				draw_radial_gradient(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const litehtml::background_layer::radial_gradient& gradient) {}
 		void				draw_conic_gradient(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const litehtml::background_layer::conic_gradient& gradient) {}
@@ -41,8 +41,8 @@ public:
 		bool				on_element_click(const litehtml::element::ptr& /*el*/) { return false; }
 		void				on_mouse_event(const litehtml::element::ptr& el, litehtml::mouse_event event) {}
 		void				set_cursor(const char* cursor) {}
-		void				transform_text(litehtml::string& text, litehtml::text_transform tt) {}
-		void				import_css(litehtml::string& text, const litehtml::string& url, litehtml::string& baseurl) {}
+		void				transform_text(litehtml::string& text, litehtml::text_transform tt) override;
+		void				import_css(litehtml::string& text, const litehtml::string& url, litehtml::string& baseurl) override;
 		void				set_clip(const litehtml::position& pos, const litehtml::border_radiuses& bdr_radius) {}
 		void				del_clip() {}
 		litehtml::element::ptr	create_element( const char* tag_name,
@@ -50,7 +50,7 @@ public:
 														const std::shared_ptr<litehtml::document>& doc) override;
 		void				get_language(litehtml::string& language, litehtml::string& culture) const override;
 		litehtml::string	resolve_color(const litehtml::string& /*color*/) const { return litehtml::string(); }
-		void				split_text(const char* text, const std::function<void(const char*)>& on_word, const std::function<void(const char*)>& on_space) {}
+		void				split_text(const char* text, const std::function<void(const char*)>& on_word, const std::function<void(const char*)>& on_space) override;
 
 		// Non-override methods
 		void set_renderer(SDL_Renderer* renderer);

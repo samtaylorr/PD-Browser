@@ -47,15 +47,6 @@ void UIApp::cleanup() {
 }
 
 void UIApp::run() {
-    // TODO: Change HtmlRenderHost.cpp to do this logic instead
-    TTF_Font* myFont = TTF_OpenFont("data/fonts/Roboto-Regular.ttf", 24);
-    if (!myFont) {
-        std::cerr << "Failed to load font: " << SDL_GetError() << std::endl;
-        return;
-    }
-    litehtml::uint_ptr yourFontHandle = (litehtml::uint_ptr)myFont;
-    // -----------
-
     bool quit = false;
     SDL_Event e;
     SDL_zero(e);
@@ -64,6 +55,15 @@ void UIApp::run() {
     htmlRenderer->set_renderer(mRenderer);
     litehtml::document::ptr doc = litehtml::document::createFromString(html, htmlRenderer.get());
     doc->render(mWidth);
+
+    // Simple test for draw_text later
+    litehtml::font_description fontDesc;
+    fontDesc.family = "Roboto-Regular";
+    fontDesc.size = 14;
+    fontDesc.weight = 400;
+    litehtml::font_metrics metrics;
+    litehtml::font_metrics* fm = &metrics;
+    litehtml::uint_ptr yourFontHandle = htmlRenderer->create_font(fontDesc, doc.get(), fm);
 
     while (!quit) {
         while (SDL_PollEvent(&e)) {
@@ -77,14 +77,13 @@ void UIApp::run() {
         SDL_RenderClear(mRenderer);
 
         doc->draw(reinterpret_cast<litehtml::uint_ptr> (htmlRenderer.get()), 0, 0, nullptr);
+
         // We call here, but doc->draw() should be doing it instead (?)
-        htmlRenderer->draw_text(0, "Test text", yourFontHandle, {255, 0, 0, 255}, {10, 10, 100, 20});
+        //htmlRenderer->draw_text(0, "Hello World", yourFontHandle, {255, 0, 0, 255}, {10, 10, 100, 20});
 
         // Present the rendered frame
         SDL_RenderPresent(mRenderer);
     }
-
-    TTF_CloseFont(myFont);
 }
 
 void UIApp::loadPage(const std::string& html)

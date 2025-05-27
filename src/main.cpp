@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
         UIApp app(kScreenWidth, kScreenHeight, project);
         if (argc >= 2) {
             ClientHTTPSocketHandler client(argv[1]);
-            client.SendHTTPRequest("GET", "/pdbrowser-html/");
+            client.SendHTTPRequest("GET", "/");
             auto responseOpt = client.ParseHTMLResponse();
             if (responseOpt) {
                 app.loadPage(responseOpt->get().html_body);
