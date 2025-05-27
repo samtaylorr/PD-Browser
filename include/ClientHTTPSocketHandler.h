@@ -1,25 +1,29 @@
-
 #ifndef CLIENTHTTPSOCKETHANDLER_H
 #define CLIENTHTTPSOCKETHANDLER_H
+
 #include "SocketHandler.h"
 #include "raii/RAIISockets.h"
 #include <memory>
 #include <string>
 #include <map>
 #include <optional>
+#include <functional>
 
-// Holds common HTTP headers and body
-typedef struct {
+// Structure for holding HTTP headers and HTML body content
+struct HttpResponse {
     std::multimap<std::string, std::string> headers;
-    std::string html_body;  // Decoded body
-} HttpResponse;
+    std::string html_body;  // Decoded response body
+};
 
 class ClientHTTPSocketHandler : public SocketHandler
 {
 public:
-    explicit ClientHTTPSocketHandler(std::string addr)
-        : address(std::move(addr)), wsaInit(), socket() {}
+    explicit ClientHTTPSocketHandler(std::string addr);
+
+    // Sends an HTTP request (default method = GET, default path = /index.html)
     int SendHTTPRequest(const std::string& method = "GET", const std::string& path = "/index.html");
+
+    // Parses the received HTTP response into headers and body
     std::optional<std::reference_wrapper<HttpResponse>> ParseHTMLResponse();
 
 private:
@@ -30,4 +34,4 @@ private:
     std::optional<HttpResponse> httpResponse;
 };
 
-#endif
+#endif // CLIENTHTTPSOCKETHANDLER_H
