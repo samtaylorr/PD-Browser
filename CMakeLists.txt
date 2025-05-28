@@ -9,7 +9,7 @@ find_package(SDL3_ttf REQUIRED CONFIG)
 add_subdirectory(lib/litehtml)
 
 # Collect all source files
-file(GLOB SOURCES "src/*.cpp")
+file(GLOB_RECURSE SOURCES "src/*.cpp")
 
 # Create the executable
 add_executable(web-browser ${SOURCES})

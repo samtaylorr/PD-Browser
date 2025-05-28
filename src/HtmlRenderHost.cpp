@@ -1,4 +1,5 @@
 #include "HtmlRenderHost.h"
+#include "ui/UIContext.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <iostream>
@@ -93,7 +94,7 @@ int HtmlRenderHost::text_width(const char* text, litehtml::uint_ptr hFont)
 
 void HtmlRenderHost::draw_text(litehtml::uint_ptr hdc, const char* text, litehtml::uint_ptr hFont, litehtml::web_color color, const litehtml::position& pos)
 {
-    if (!m_renderer) return;
+    if (!mRenderer) return;
     if (!text) return;
 
     TTF_Font* font = (TTF_Font*)hFont;
@@ -112,7 +113,7 @@ void HtmlRenderHost::draw_text(litehtml::uint_ptr hdc, const char* text, litehtm
         return;
     }
 
-    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(m_renderer, textSurface);
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(mRenderer, textSurface);
     SDL_DestroySurface(textSurface);
     if (!textTexture) {
         std::cerr << "SDL_CreateTextureFromSurface failed: " << SDL_GetError() << std::endl;
@@ -134,7 +135,7 @@ void HtmlRenderHost::draw_text(litehtml::uint_ptr hdc, const char* text, litehtm
         dstRect.h = pos.height > 0 ? static_cast<float>(pos.height) : 0.f;
     }
 
-    SDL_RenderTexture(m_renderer, textTexture, nullptr, &dstRect);
+    SDL_RenderTexture(mRenderer, textTexture, nullptr, &dstRect);
     SDL_DestroyTexture(textTexture);
 }
 
@@ -177,8 +178,8 @@ void HtmlRenderHost::draw_solid_fill(litehtml::uint_ptr hdc, const litehtml::bac
         color.blue,
         color.alpha
     };
-    SDL_SetRenderDrawColor(m_renderer, sdlColor.r, sdlColor.g, sdlColor.b, sdlColor.a);
-    SDL_RenderFillRect(m_renderer, &fillRect);
+    SDL_SetRenderDrawColor(mRenderer, sdlColor.r, sdlColor.g, sdlColor.b, sdlColor.a);
+    SDL_RenderFillRect(mRenderer, &fillRect);
 }
 
 void HtmlRenderHost::draw_borders(litehtml::uint_ptr hdc, const litehtml::borders& borders, const litehtml::position& draw_pos, bool root)
@@ -190,8 +191,8 @@ void HtmlRenderHost::draw_borders(litehtml::uint_ptr hdc, const litehtml::border
             static_cast<float>(draw_pos.width),
             static_cast<float>(draw_pos.height)
         };
-        SDL_SetRenderDrawColor(m_renderer, borders.top.color.red, borders.top.color.green, borders.top.color.blue, borders.top.color.alpha);
-        SDL_RenderRect(m_renderer, &fillRect);
+        SDL_SetRenderDrawColor(mRenderer, borders.top.color.red, borders.top.color.green, borders.top.color.blue, borders.top.color.alpha);
+        SDL_RenderRect(mRenderer, &fillRect);
     }
 }
 
@@ -230,14 +231,20 @@ void HtmlRenderHost::get_language(litehtml::string& language, litehtml::string& 
 }
 
 void HtmlRenderHost::set_renderer(SDL_Renderer* renderer) {
-    m_renderer = renderer;
+    mRenderer = renderer;
 }
 
 void HtmlRenderHost::get_viewport(litehtml::position& viewport) const {
-    viewport.x = 0;
-    viewport.y = 0;
-    viewport.width = 600; // or mWidth from your app
-    viewport.height = 400; // or mHeight
+    if (mRenderer) {
+        int w, h;
+        SDL_GetCurrentRenderOutputSize(mRenderer, &w, &h);
+        viewport.x = 0;
+        viewport.y = 0;
+        viewport.width = static_cast<int>(UIContext::get().getContentWidth());
+        viewport.height = h;
+    } else {
+        viewport = litehtml::position(0, 0, 600, 400); // fallback
+    }
 }
 
 void HtmlRenderHost::transform_text(litehtml::string& text, litehtml::text_transform tt) {

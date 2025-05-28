@@ -55,7 +55,7 @@ public:
 		// Non-override methods
 		void set_renderer(SDL_Renderer* renderer);
 private:
-    SDL_Renderer* m_renderer = nullptr;
+    SDL_Renderer* mRenderer = nullptr;
 };
 
 #endif

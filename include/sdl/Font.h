@@ -1,5 +1,0 @@
-class Font
-{
-public:
-    Font();
-}

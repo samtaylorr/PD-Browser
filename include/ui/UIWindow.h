@@ -1,20 +1,21 @@
-#ifndef UIAPP_H
-#define UIAPP_H
+#ifndef UIWINDOW_H
+#define UIWINDOW_H
 
 #include <string>
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include "ui/UIScrollbar.h"
 
-class UIApp
+class UIWindow
 {
 public:
-    UIApp(int width, int height, const std::string& title);
+    UIWindow(int width, int height, const std::string& title);
 
     // RAII: delete copy constructor/assignment
-    UIApp(const UIApp&) = delete;
-    UIApp& operator=(const UIApp&) = delete;
+    UIWindow(const UIWindow&) = delete;
+    UIWindow& operator=(const UIWindow&) = delete;
 
-    ~UIApp();
+    ~UIWindow();
     void run();
     void loadPage(const std::string& html);
 
@@ -23,9 +24,11 @@ private:
 
     int mWidth;
     int mHeight;
+    int mScrollY = 0;
     std::string html;
     SDL_Window* mWindow;
     SDL_Renderer* mRenderer;
+    UIScrollbar mScrollbar;
 };
 
-#endif // UIAPP_H
+#endif // UIWINDOW_H
