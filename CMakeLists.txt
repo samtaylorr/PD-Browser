@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 project(web-browser)
 
-# Find SDL3 and SDL3_ttf
+# Find SDL3, SDL3_ttf and SDL3_image
 find_package(SDL3 REQUIRED CONFIG)
 find_package(SDL3_ttf REQUIRED CONFIG)
+find_package(SDL3_image REQUIRED CONFIG)
 
 # Add litehtml subdirectory (assumes you cloned it to lib/litehtml)
 add_subdirectory(lib/litehtml)
@@ -18,6 +19,7 @@ add_executable(web-browser ${SOURCES})
 target_link_libraries(web-browser PRIVATE 
     SDL3::SDL3
     SDL3_ttf::SDL3_ttf
+    SDL3_image::SDL3_image
     litehtml
 )
 

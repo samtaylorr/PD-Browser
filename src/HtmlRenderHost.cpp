@@ -6,6 +6,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include <SDL3_image/SDL_image.h>
 
 using namespace litehtml;
 
@@ -155,7 +156,12 @@ void HtmlRenderHost::draw_list_marker( litehtml::uint_ptr hdc, const litehtml::l
 
 void HtmlRenderHost::load_image( const char* src, const char* baseurl, bool redraw_on_ready )
 {
-    std::cout << "#loadImage " << src << "\n";
+    std::cout << "#getImageSize " << src << "\n";
+
+    std::string basePath = "../examples/scenes/";
+    //auto image = IMG_Load((basePath + src).c_str());
+    //std::cout << "width:" << image->w << " height" << image->h << "\n";
+    //SDL_DestroySurface(image);
 }
 
 void HtmlRenderHost::get_image_size( const char* src, const char* baseurl, litehtml::size& sz )

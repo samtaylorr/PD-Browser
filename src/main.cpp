@@ -14,7 +14,8 @@ int main(int argc, char* argv[]) {
         UIWindow window(UIContext::get().windowWidth, UIContext::get().windowHeight, project);
         if (argc >= 2) {
             ClientHTTPSocketHandler client(argv[1]);
-            client.SendHTTPRequest("GET", "/");
+            if(argv[2] != nullptr){ client.SendHTTPRequest("GET", argv[2]); }
+            else                  { client.SendHTTPRequest("GET", "/");     }
             auto responseOpt = client.ParseHTMLResponse();
             if (responseOpt) {
                 window.loadPage(responseOpt->get().html_body);
@@ -26,7 +27,7 @@ int main(int argc, char* argv[]) {
         }
         else
         {
-            throw std::invalid_argument("Usage: web-browser <URL>");
+            throw std::invalid_argument("Usage:\nweb-browser <URL>\nweb-browser <URL> <path>");
         }
         
     }
