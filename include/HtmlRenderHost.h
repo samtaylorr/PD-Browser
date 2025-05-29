@@ -5,6 +5,9 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include <unordered_map>
+#include <string>
+#include <functional>
 
 class HtmlRenderHost : public litehtml::document_container {
 public:
@@ -54,8 +57,12 @@ public:
 
 		// Non-override methods
 		void set_renderer(SDL_Renderer* renderer);
+		std::string resolve_url(const std::string& src, const std::string& baseurl);
 private:
     SDL_Renderer* mRenderer = nullptr;
+	std::unordered_map<std::string, SDL_Texture*> imageCache;
+	std::function<void()> mRedrawCallback;
+	std::string extract_path(const std::string& url);
 };
 
 #endif

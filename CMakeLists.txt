@@ -32,12 +32,22 @@ target_include_directories(web-browser PRIVATE
 # Windows-specific settings
 if(WIN32)
     target_link_libraries(web-browser PRIVATE ws2_32)
+
+    # Copy over the dlls from the vendor folder to the root of the executable
+    file(GLOB VENDOR_FILES "${CMAKE_SOURCE_DIR}/vendor/*")
+    foreach(FILE ${VENDOR_FILES})
+        add_custom_command(TARGET web-browser POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${FILE}"
+                "${CMAKE_BINARY_DIR}/"
+        )
+    endforeach()
 endif()
 
 add_custom_command(TARGET web-browser POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_SOURCE_DIR}/data/fonts"
-        "${CMAKE_BINARY_DIR}/data/fonts"
+        "${CMAKE_SOURCE_DIR}/data"
+        "${CMAKE_BINARY_DIR}/data"
 )
 
 # Prevent SDL from overriding main()

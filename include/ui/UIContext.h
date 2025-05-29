@@ -1,6 +1,7 @@
 #ifndef UICONTEXT_H
 #define UICONTEXT_H
 
+#include <string>
 
 //TODO: Put renderer inside UIContext
 
@@ -21,6 +22,9 @@ public:
     // Scroll state
     int scrollY = 0;
     int contentHeight = 0;
+    
+    // Network
+    std::string url;
 
     // Derived
     int getContentWidth() const {

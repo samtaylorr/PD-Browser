@@ -16,7 +16,7 @@ UIWindow::UIWindow(int width, int height, const std::string& title)
         throw std::runtime_error(std::string("TTF_Init failed: ") + SDL_GetError());
     }
 
-    mWindow = SDL_CreateWindow(title.c_str(), width, height, SDL_WINDOW_RESIZABLE);
+    mWindow = SDL_CreateWindow(title.c_str(), width, height, SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE);
     if (!mWindow) {
         SDL_Quit();
         throw std::runtime_error(std::string("SDL_CreateWindow failSDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNCed: ") + SDL_GetError());

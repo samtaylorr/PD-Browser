@@ -1,12 +1,19 @@
 #include "HtmlRenderHost.h"
+#include "ClientHTTPSocketHandler.h"
 #include "ui/UIContext.h"
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <iostream>
+#include <unordered_map>
+#include <regex>
+#include <litehtml.h>
+
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3_image/SDL_image.h>
+#include <SDL3/SDL_IOStream.h>
 
 using namespace litehtml;
 
@@ -154,14 +161,50 @@ void HtmlRenderHost::draw_list_marker( litehtml::uint_ptr hdc, const litehtml::l
 {
 }
 
-void HtmlRenderHost::load_image( const char* src, const char* baseurl, bool redraw_on_ready )
+void HtmlRenderHost::load_image(const char* src, const char* baseurl, bool redraw_on_ready)
 {
-    std::cout << "#getImageSize " << src << "\n";
+    std::string imageUrl = resolve_url(src, UIContext::get().url);
+    std::cout << imageUrl << std::endl;
+    // Check cache
+    if (imageCache.find(imageUrl) != imageCache.end()) {
+        if (redraw_on_ready && mRedrawCallback) mRedrawCallback();
+        return;
+    }
 
-    std::string basePath = "../examples/scenes/";
-    //auto image = IMG_Load((basePath + src).c_str());
-    //std::cout << "width:" << image->w << " height" << image->h << "\n";
-    //SDL_DestroySurface(image);
+    // Use your HTTP handler to fetch the image
+    ClientHTTPSocketHandler handler(imageUrl);  // You'll need to split domain from path
+    if (handler.SendHTTPRequest("GET", extract_path(imageUrl)) == 0) {
+        auto response = handler.ParseHTMLResponse();  // Could rename to ParseHTTPResponse()
+        if (response && response->get().html_body.size()) {
+            const std::string& data = response->get().html_body;
+
+            // Use SDL_RWFromMem to read image from memory
+            SDL_IOStream* rw = SDL_IOFromConstMem(data.data(), static_cast<int>(data.size()));
+            if (!rw) {
+                std::cerr << "SDL_IOFromConstMem failed: " << SDL_GetError() << "\n";
+                return;
+            }
+
+            SDL_Surface* surface = IMG_Load_IO(rw, 1);
+            if (!surface) {
+                std::cerr << "IMG_Load_IO failed: " << SDL_GetError() << "\n";
+                return;
+            }
+
+            SDL_Texture* texture = SDL_CreateTextureFromSurface(mRenderer, surface);
+            SDL_DestroySurface(surface);
+            if (!texture) {
+                std::cerr << "SDL_CreateTextureFromSurface failed: " << SDL_GetError() << "\n";
+                return;
+            }
+
+            imageCache[imageUrl] = texture;
+
+            if (redraw_on_ready && mRedrawCallback) {
+                mRedrawCallback();
+            }
+        }
+    }
 }
 
 void HtmlRenderHost::get_image_size( const char* src, const char* baseurl, litehtml::size& sz )
@@ -297,4 +340,28 @@ void HtmlRenderHost::split_text(const char* text,
     if (!token.empty()) {
         on_word(token.c_str());
     }
+}
+
+std::string HtmlRenderHost::resolve_url(const std::string& src, const std::string& baseurl)
+{
+    if (src.find("http://") == 0 || src.find("https://") == 0) {
+        return src;  // Absolute
+    } else {
+        // Basic base resolution, e.g., https://example.com/assets/
+        if (!baseurl.empty() && baseurl.back() == '/' && src.front() != '/') {
+            return baseurl + src;
+        } else if (!baseurl.empty()) {
+            return baseurl + "/" + src;
+        } else {
+            return src;  // fallback
+        }
+    }
+}
+
+std::string HtmlRenderHost::extract_path(const std::string& url) {
+    auto scheme_end = url.find("://");
+    if (scheme_end == std::string::npos) return "/";
+
+    auto path_start = url.find('/', scheme_end + 3);
+    return (path_start != std::string::npos) ? url.substr(path_start) : "/";
 }

@@ -14,8 +14,8 @@ int main(int argc, char* argv[]) {
         UIWindow window(UIContext::get().windowWidth, UIContext::get().windowHeight, project);
         if (argc >= 2) {
             ClientHTTPSocketHandler client(argv[1]);
-            if(argv[2] != nullptr){ client.SendHTTPRequest("GET", argv[2]); }
-            else                  { client.SendHTTPRequest("GET", "/");     }
+            UIContext::get().url = (argv[2] != nullptr) ? argv[2] : "/";
+            client.SendHTTPRequest("GET", UIContext::get().url);
             auto responseOpt = client.ParseHTMLResponse();
             if (responseOpt) {
                 window.loadPage(responseOpt->get().html_body);
