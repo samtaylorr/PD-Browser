@@ -24,9 +24,14 @@ public:
     int contentHeight = 0;
     
     // Network
-    std::string url;
+    std::string address;
+    std::string path;
 
     // Derived
+    std::string getUrl() const {
+        return address + path;
+    }
+    
     int getContentWidth() const {
         return windowWidth - scrollbarWidth;
     }

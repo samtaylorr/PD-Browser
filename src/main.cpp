@@ -13,9 +13,10 @@ int main(int argc, char* argv[]) {
     try {
         UIWindow window(UIContext::get().windowWidth, UIContext::get().windowHeight, project);
         if (argc >= 2) {
-            ClientHTTPSocketHandler client(argv[1]);
-            UIContext::get().url = (argv[2] != nullptr) ? argv[2] : "/";
-            client.SendHTTPRequest("GET", UIContext::get().url);
+            UIContext::get().address = argv[1];
+            ClientHTTPSocketHandler client(UIContext::get().address);
+            UIContext::get().path = argv[2];
+            client.SendHTTPRequest("GET", UIContext::get().path);
             auto responseOpt = client.ParseHTMLResponse();
             if (responseOpt) {
                 window.loadPage(responseOpt->get().html_body);

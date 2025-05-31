@@ -35,7 +35,7 @@ int ClientHTTPSocketHandler::SendHTTPRequest(const std::string& method, const st
         int iResult = getaddrinfo(address.c_str(), "80", &hints, &result);
         if (iResult != 0) {
             std::cerr << "getaddrinfo failed with error: " << iResult << "\n";
-            return 1;
+            return 1;std::cout << address.c_str() << std::endl;
         }
         std::unique_ptr<addrinfo, decltype(&freeaddrinfo)> resultGuard(result, freeaddrinfo);
 
@@ -103,9 +103,10 @@ std::optional<std::reference_wrapper<HttpResponse>> ClientHTTPSocketHandler::Par
     httpResponse.emplace();
     std::string_view response_view = this->getDataBuffer();
     std::string response(response_view.substr(0, this->getTotalReceived()));
-    size_t pos = response.find("\r\n\r\n");
 
+    size_t pos = response.find("\r\n\r\n");
     if (pos == std::string::npos) pos = response.find("\n\n");
+
     if (pos != std::string::npos) {
         std::string headers = response.substr(0, pos);
         std::string body = response.substr(pos + (response[pos] == '\r' ? 4 : 2));
@@ -114,10 +115,9 @@ std::optional<std::reference_wrapper<HttpResponse>> ClientHTTPSocketHandler::Par
             this->httpResponse->headers.emplace(key, value);
         }
         httpResponse->html_body = body;
-        return *httpResponse;
     } else {
-        std::cerr << "No header/body separator found! First 100 bytes: "
-                  << response.substr(0, 100) << "\n";
-        return std::nullopt;
+        // No headers found: treat entire response as body
+        httpResponse->html_body = response;
     }
+    return *httpResponse;
 }

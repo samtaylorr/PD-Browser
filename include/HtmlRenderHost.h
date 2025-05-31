@@ -29,7 +29,7 @@ public:
 		void				draw_list_marker(litehtml::uint_ptr hdc, const litehtml::list_marker& marker) override;
         void				load_image(const char* src, const char* baseurl, bool redraw_on_ready) override;
 		void				get_image_size(const char* src, const char* baseurl, litehtml::size& sz) override;
-		void				draw_image(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const std::string& url, const std::string& base_url) {};
+		void				draw_image(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const std::string& url, const std::string& base_url) override;
 		void				draw_solid_fill(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const litehtml::web_color& color) override;
         void				get_media_features(litehtml::media_features& media) const override;
 		void				get_viewport(litehtml::position& viewport) const override;
@@ -57,12 +57,15 @@ public:
 
 		// Non-override methods
 		void set_renderer(SDL_Renderer* renderer);
-		std::string resolve_url(const std::string& src, const std::string& baseurl);
+
 private:
     SDL_Renderer* mRenderer = nullptr;
 	std::unordered_map<std::string, SDL_Texture*> imageCache;
 	std::function<void()> mRedrawCallback;
-	std::string extract_path(const std::string& url);
+	std::string resolve_url(const std::string& src, const std::string& baseurl);
+	bool is_absolute_url(const std::string& url);
+	bool is_root_path(const std::string& url);
+	std::string normalize_path(const std::string& path);
 };
 
 #endif

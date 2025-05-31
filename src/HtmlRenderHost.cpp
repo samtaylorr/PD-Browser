@@ -13,7 +13,7 @@
 #include <SDL3/SDL_main.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3_image/SDL_image.h>
-#include <SDL3/SDL_IOStream.h>
+#include <SDL3/SDL_iostream.h>
 
 using namespace litehtml;
 
@@ -67,6 +67,33 @@ litehtml::uint_ptr HtmlRenderHost::create_font(
     return (litehtml::uint_ptr)font;
 }
 
+void HtmlRenderHost::draw_image(litehtml::uint_ptr hdc,
+                               const litehtml::background_layer& layer,
+                               const std::string& url,
+                               const std::string& base_url)
+{
+    std::string imageUrl = resolve_url(url, UIContext::get().getUrl());
+
+    auto it = imageCache.find(imageUrl);
+    if (it == imageCache.end()) return;  // Image not loaded yet
+
+    SDL_Texture* texture = it->second;
+
+    // Use border_box as drawing rectangle
+    const litehtml::position& pos = layer.border_box;
+
+    SDL_FRect dstRect = {
+        static_cast<float>(pos.left()),
+        static_cast<float>(pos.top()),
+        static_cast<float>(pos.width),
+        static_cast<float>(pos.height)
+    };
+
+    bool success = SDL_RenderTexture(mRenderer, texture, nullptr, &dstRect);
+    if (!success) {
+        std::cerr << "SDL_RenderTexture failed: " << SDL_GetError() << "\n";
+    }
+}
 
 void HtmlRenderHost::delete_font( litehtml::uint_ptr hFont )
 {
@@ -163,8 +190,8 @@ void HtmlRenderHost::draw_list_marker( litehtml::uint_ptr hdc, const litehtml::l
 
 void HtmlRenderHost::load_image(const char* src, const char* baseurl, bool redraw_on_ready)
 {
-    std::string imageUrl = resolve_url(src, UIContext::get().url);
-    std::cout << imageUrl << std::endl;
+    std::string imageUrl = resolve_url(src, UIContext::get().getUrl());
+
     // Check cache
     if (imageCache.find(imageUrl) != imageCache.end()) {
         if (redraw_on_ready && mRedrawCallback) mRedrawCallback();
@@ -172,44 +199,58 @@ void HtmlRenderHost::load_image(const char* src, const char* baseurl, bool redra
     }
 
     // Use your HTTP handler to fetch the image
-    ClientHTTPSocketHandler handler(imageUrl);  // You'll need to split domain from path
-    if (handler.SendHTTPRequest("GET", extract_path(imageUrl)) == 0) {
-        auto response = handler.ParseHTMLResponse();  // Could rename to ParseHTTPResponse()
-        if (response && response->get().html_body.size()) {
-            const std::string& data = response->get().html_body;
+    ClientHTTPSocketHandler handler(UIContext::get().address);  // You'll need to split domain from path
+    handler.SendHTTPRequest("GET", UIContext::get().path+src);
+    auto response = handler.ParseHTMLResponse();  // Could rename to ParseHTTPResponse()
+    if (response && response->get().html_body.size()) {
+        const std::string& data = response->get().html_body;
 
-            // Use SDL_RWFromMem to read image from memory
-            SDL_IOStream* rw = SDL_IOFromConstMem(data.data(), static_cast<int>(data.size()));
-            if (!rw) {
-                std::cerr << "SDL_IOFromConstMem failed: " << SDL_GetError() << "\n";
-                return;
-            }
+        // Use SDL_RWFromMem to read image from memory
+        SDL_IOStream* rw = SDL_IOFromConstMem(data.data(), static_cast<int>(data.size()));
+        if (!rw) {
+            std::cerr << "SDL_IOFromConstMem failed: " << SDL_GetError() << "\n";
+            return;
+        }
 
-            SDL_Surface* surface = IMG_Load_IO(rw, 1);
-            if (!surface) {
-                std::cerr << "IMG_Load_IO failed: " << SDL_GetError() << "\n";
-                return;
-            }
+        SDL_Surface* surface = IMG_Load_IO(rw, 1);
+        if (!surface) {
+            std::cerr << "IMG_Load_IO failed: " << SDL_GetError() << "\n";
+            return;
+        }
 
-            SDL_Texture* texture = SDL_CreateTextureFromSurface(mRenderer, surface);
-            SDL_DestroySurface(surface);
-            if (!texture) {
-                std::cerr << "SDL_CreateTextureFromSurface failed: " << SDL_GetError() << "\n";
-                return;
-            }
+        SDL_Texture* texture = SDL_CreateTextureFromSurface(mRenderer, surface);
+        SDL_DestroySurface(surface);
+        if (!texture) {
+            std::cerr << "SDL_CreateTextureFromSurface failed: " << SDL_GetError() << "\n";
+            return;
+        }
 
-            imageCache[imageUrl] = texture;
+        imageCache[imageUrl] = texture;
 
-            if (redraw_on_ready && mRedrawCallback) {
-                mRedrawCallback();
-            }
+        if (redraw_on_ready && mRedrawCallback) {
+            mRedrawCallback();
         }
     }
 }
 
-void HtmlRenderHost::get_image_size( const char* src, const char* baseurl, litehtml::size& sz )
+void HtmlRenderHost::get_image_size(const char* src, const char* baseurl, litehtml::size& sz)
 {
-
+    std::string imageUrl = resolve_url(src, UIContext::get().getUrl());
+    auto it = imageCache.find(imageUrl);
+    if (it != imageCache.end()) {
+        float w = 0.f, h = 0.f;
+        if (!SDL_GetTextureSize(it->second, &w, &h)) {
+            std::cerr << "SDL_GetTextureSize failed: " << SDL_GetError() << "\n";
+            sz.width = 0;
+            sz.height = 0;
+        } else {
+            sz.width = static_cast<int>(w);
+            sz.height = static_cast<int>(h);
+        }
+    } else {
+        sz.width = 0;
+        sz.height = 0;
+    }
 }
 
 void HtmlRenderHost::draw_solid_fill(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const litehtml::web_color& color)
@@ -342,26 +383,53 @@ void HtmlRenderHost::split_text(const char* text,
     }
 }
 
-std::string HtmlRenderHost::resolve_url(const std::string& src, const std::string& baseurl)
-{
-    if (src.find("http://") == 0 || src.find("https://") == 0) {
-        return src;  // Absolute
-    } else {
-        // Basic base resolution, e.g., https://example.com/assets/
-        if (!baseurl.empty() && baseurl.back() == '/' && src.front() != '/') {
-            return baseurl + src;
-        } else if (!baseurl.empty()) {
-            return baseurl + "/" + src;
-        } else {
-            return src;  // fallback
-        }
-    }
+// Helper: Check if URL is absolute (starts with http:// or https://)
+bool HtmlRenderHost::is_absolute_url(const std::string& url) {
+    return url.find("://") != std::string::npos;
 }
 
-std::string HtmlRenderHost::extract_path(const std::string& url) {
-    auto scheme_end = url.find("://");
-    if (scheme_end == std::string::npos) return "/";
+// Helper: Check if path is root-relative (starts with '/')
+bool HtmlRenderHost::is_root_path(const std::string& path) {
+    return !path.empty() && path[0] == '/';
+}
 
-    auto path_start = url.find('/', scheme_end + 3);
-    return (path_start != std::string::npos) ? url.substr(path_start) : "/";
+// Helper: Normalize ".." and "." in paths
+std::string HtmlRenderHost::normalize_path(const std::string& path) {
+    std::vector<std::string> parts;
+    std::istringstream ss(path);
+    std::string token;
+
+    while (std::getline(ss, token, '/')) {
+        if (token == "..") {
+            if (!parts.empty()) parts.pop_back();
+        } else if (token != "." && !token.empty()) {
+            parts.push_back(token);
+        }
+    }
+
+    std::string result;
+    for (const auto& part : parts) {
+        result += "/" + part;
+    }
+
+    return result.empty() ? "/" : result;
+}
+
+std::string HtmlRenderHost::resolve_url(const std::string& url, const std::string& base_url) {
+    if (is_absolute_url(url)) {
+        return url;
+    }
+
+    if (is_root_path(url)) {
+        return normalize_path(url);  // <- returns "/something", which is correct for HTTP request path
+    }
+
+    std::string base = base_url.empty() ? "/" : base_url;
+    size_t lastSlash = base.find_last_of('/');
+    if (lastSlash != std::string::npos) {
+        base = base.substr(0, lastSlash + 1);
+    }
+
+    std::string combined = base + url;
+    return normalize_path(combined);
 }
